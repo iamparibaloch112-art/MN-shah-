@@ -1,0 +1,6 @@
+{
+  "name": "MN Shah Bot",
+  "description": "Autonomous AI trading assistant with live forex & gold candlestick charts, multi-timeframe technical analysis, Urdu voice commands, and manual trade confirmation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

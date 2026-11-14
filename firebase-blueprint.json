@@ -1,0 +1,215 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated trader preferences and bot configuration for MN Shah Bot.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name shown in the bot greeting."
+        },
+        "voiceAlertsEnabled": {
+          "type": "boolean",
+          "description": "Whether Urdu TTS alerts play automatically for new signals."
+        },
+        "autoMonitorEnabled": {
+          "type": "boolean",
+          "description": "Whether the robot continuously monitors live feeds while open."
+        },
+        "preferredAsset": {
+          "type": "string",
+          "enum": ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "NZD/USD (OTC)", "USD/NGN (OTC)", "Axie Infinity (OTC)"],
+          "description": "Default market pair selected on launch."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) when profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) when profile was last updated."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "voiceAlertsEnabled",
+        "autoMonitorEnabled",
+        "preferredAsset",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SignalRecord": {
+      "title": "SignalRecord",
+      "description": "Immutable AI technical analysis signal with multi-timeframe indicators and Urdu explanation.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the signal owner."
+        },
+        "symbol": {
+          "type": "string",
+          "enum": ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "NZD/USD (OTC)", "USD/NGN (OTC)", "Axie Infinity (OTC)"],
+          "description": "Analyzed market symbol."
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["UP", "DOWN", "UNCERTAIN", "WAIT"],
+          "description": "Estimated next 1-minute candle direction or WAIT when evidence is insufficient."
+        },
+        "confidence": {
+          "type": "integer",
+          "description": "Confidence percentage 0-100 derived from technical alignment."
+        },
+        "entryPrice": {
+          "type": "number",
+          "description": "Live spot price at time of analysis."
+        },
+        "rsi1m": {
+          "type": "number",
+          "description": "Computed 1-minute RSI(14) value."
+        },
+        "macdSignal": {
+          "type": "string",
+          "description": "MACD histogram and crossover status."
+        },
+        "emaTrend": {
+          "type": "string",
+          "description": "EMA(9/21/50) alignment across 1m, 5m, 15m."
+        },
+        "patternSummary": {
+          "type": "string",
+          "description": "Detected candlestick pattern and market structure."
+        },
+        "urduSummary": {
+          "type": "string",
+          "description": "Urdu explanation spoken by MN Shah robot."
+        },
+        "evidenceSummary": {
+          "type": "string",
+          "description": "Detailed technical evidence behind the signal."
+        },
+        "dataSource": {
+          "type": "string",
+          "description": "Market feed source identifier and status."
+        },
+        "candleExpiryEpochMs": {
+          "type": "integer",
+          "description": "Epoch milliseconds when the analyzed 1-minute candle expires."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of signal generation."
+        }
+      },
+      "required": [
+        "userId",
+        "symbol",
+        "direction",
+        "confidence",
+        "entryPrice",
+        "rsi1m",
+        "macdSignal",
+        "emaTrend",
+        "patternSummary",
+        "urduSummary",
+        "evidenceSummary",
+        "dataSource",
+        "candleExpiryEpochMs",
+        "createdAt"
+      ]
+    },
+    "TradeConfirmation": {
+      "title": "TradeConfirmation",
+      "description": "Explicit manual real-trade confirmation audit entry (no automatic or demo execution).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the trader."
+        },
+        "signalId": {
+          "type": "string",
+          "description": "Optional associated SignalRecord document ID."
+        },
+        "symbol": {
+          "type": "string",
+          "enum": ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "NZD/USD (OTC)", "USD/NGN (OTC)", "Axie Infinity (OTC)"],
+          "description": "Market symbol."
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["UP", "DOWN"],
+          "description": "Explicitly confirmed direction."
+        },
+        "stakeUsd": {
+          "type": "number",
+          "description": "Authorized position size / stake in USD."
+        },
+        "brokerName": {
+          "type": "string",
+          "description": "Authorized broker channel or manual execution ledger."
+        },
+        "executionMode": {
+          "type": "string",
+          "enum": ["MANUAL_CONFIRMED"],
+          "description": "Strict manual confirmation flag."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["CONFIRMED", "CANCELLED"],
+          "description": "Current audit state of the confirmed trade."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional trader risk/execution notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of confirmation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp()) of last update."
+        }
+      },
+      "required": [
+        "userId",
+        "symbol",
+        "direction",
+        "stakeUsd",
+        "brokerName",
+        "executionMode",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile and MN Shah autonomous robot preferences."
+    },
+    "/users/{userId}/signals/{signalId}": {
+      "schema": { "$ref": "#/entities/SignalRecord" },
+      "description": "User-scoped immutable log of AI trading signals and technical evidence."
+    },
+    "/users/{userId}/trade_confirmations/{tradeId}": {
+      "schema": { "$ref": "#/entities/TradeConfirmation" },
+      "description": "User-scoped manual real-trade confirmation audit ledger."
+    }
+  }
+}

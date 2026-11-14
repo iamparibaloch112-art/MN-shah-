@@ -1,0 +1,210 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.displayName is string &&
+             data.displayName.size() >= 1 &&
+             data.displayName.size() <= 80 &&
+             data.voiceAlertsEnabled is bool &&
+             data.autoMonitorEnabled is bool &&
+             data.preferredAsset is string &&
+             data.preferredAsset in ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'NZD/USD (OTC)', 'USD/NGN (OTC)', 'Axie Infinity (OTC)'] &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    function isValidSignalRecord(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.symbol is string &&
+             data.symbol in ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'NZD/USD (OTC)', 'USD/NGN (OTC)', 'Axie Infinity (OTC)'] &&
+             data.direction is string &&
+             data.direction in ['UP', 'DOWN', 'UNCERTAIN', 'WAIT'] &&
+             data.confidence is int &&
+             data.confidence >= 0 &&
+             data.confidence <= 100 &&
+             data.entryPrice is number &&
+             data.entryPrice > 0 &&
+             data.rsi1m is number &&
+             data.rsi1m >= 0 &&
+             data.rsi1m <= 100 &&
+             data.macdSignal is string &&
+             data.macdSignal.size() >= 1 &&
+             data.macdSignal.size() <= 80 &&
+             data.emaTrend is string &&
+             data.emaTrend.size() >= 1 &&
+             data.emaTrend.size() <= 80 &&
+             data.patternSummary is string &&
+             data.patternSummary.size() >= 1 &&
+             data.patternSummary.size() <= 200 &&
+             data.urduSummary is string &&
+             data.urduSummary.size() >= 1 &&
+             data.urduSummary.size() <= 800 &&
+             data.evidenceSummary is string &&
+             data.evidenceSummary.size() >= 1 &&
+             data.evidenceSummary.size() <= 1200 &&
+             data.dataSource is string &&
+             data.dataSource.size() >= 1 &&
+             data.dataSource.size() <= 120 &&
+             data.candleExpiryEpochMs is int &&
+             data.candleExpiryEpochMs > 0 &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time;
+    }
+
+    function isValidTradeConfirmation(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             (!('signalId' in data) || (data.signalId is string && data.signalId.size() <= 128)) &&
+             data.symbol is string &&
+             data.symbol in ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'NZD/USD (OTC)', 'USD/NGN (OTC)', 'Axie Infinity (OTC)'] &&
+             data.direction is string &&
+             data.direction in ['UP', 'DOWN'] &&
+             data.stakeUsd is number &&
+             data.stakeUsd > 0 &&
+             data.stakeUsd <= 1000000 &&
+             data.brokerName is string &&
+             data.brokerName.size() >= 1 &&
+             data.brokerName.size() <= 100 &&
+             data.executionMode is string &&
+             data.executionMode == 'MANUAL_CONFIRMED' &&
+             data.status is string &&
+             data.status in ['CONFIRMED', 'CANCELLED'] &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'voiceAlertsEnabled',
+                         'autoMonitorEnabled', 'preferredAsset', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'voiceAlertsEnabled',
+                         'autoMonitorEnabled', 'preferredAsset', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isSignedIn() &&
+                       isValidUserProfile(incoming(), userId) &&
+                       request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'voiceAlertsEnabled', 'autoMonitorEnabled', 'preferredAsset', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+      match /signals/{signalId} {
+        allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(signalId);
+        allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(userId) &&
+                         isValidId(signalId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'symbol', 'direction', 'confidence', 'entryPrice',
+                           'rsi1m', 'macdSignal', 'emaTrend', 'patternSummary',
+                           'urduSummary', 'evidenceSummary', 'dataSource',
+                           'candleExpiryEpochMs', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'symbol', 'direction', 'confidence', 'entryPrice',
+                           'rsi1m', 'macdSignal', 'emaTrend', 'patternSummary',
+                           'urduSummary', 'evidenceSummary', 'dataSource',
+                           'candleExpiryEpochMs', 'createdAt'
+                         ]) &&
+                         isValidSignalRecord(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(signalId);
+      }
+
+      match /trade_confirmations/{tradeId} {
+        allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
+        allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         isValidId(userId) &&
+                         isValidId(tradeId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'symbol', 'direction', 'stakeUsd',
+                           'brokerName', 'executionMode', 'status', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'signalId', 'symbol', 'direction', 'stakeUsd',
+                           'brokerName', 'executionMode', 'status', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().status == 'CONFIRMED' &&
+                         isValidTradeConfirmation(incoming(), userId);
+
+        allow update: if isSignedIn() &&
+                         isValidTradeConfirmation(incoming(), userId) &&
+                         request.auth.uid == userId &&
+                         isValidId(userId) &&
+                         isValidId(tradeId) &&
+                         existing().status == 'CONFIRMED' &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().symbol == existing().symbol &&
+                         incoming().direction == existing().direction &&
+                         incoming().executionMode == existing().executionMode &&
+                         (
+                           (incoming().status == 'CANCELLED' &&
+                             incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt'])) ||
+                           (incoming().status == existing().status &&
+                             incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'updatedAt']))
+                         );
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(tradeId);
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MN Shah Bot</string>
+    <string name="bot_identity_title">MN SHAH AI</string>
+    <string name="bot_identity_subtitle">Autonomous Multi-Timeframe Trading Assistant</string>
+    <string name="analyze_now">ANALYZE NOW</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="command_hint">Speak or type: MN SHAH mujhe signal do</string>
+    <string name="no_guarantee_disclaimer">Quantitative + AI estimation only. Not financial advice or guaranteed accuracy.</string>
+    <string name="nav_command">Command</string>
+    <string name="nav_market">Market</string>
+    <string name="nav_signals">Signals</string>
+    <string name="nav_broker">Broker</string>
+</resources>
